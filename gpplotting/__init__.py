@@ -1,5 +1,10 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
+import warnings 
+from scipy.stats import pearsonr, gaussian_kde
+
+warnings.filterwarnings('ignore')
 
 def example_plot():
     df = sns.load_dataset("iris")
@@ -62,3 +67,34 @@ def ridgeplot(df, x, hue, aspect=5, height=1, alpha=0.7, text_xpos=0, text_ypos=
     g.set(yticks=[])
     g.despine(bottom=True, left=True)
     return g
+
+'''
+Creates a rasterized density plot
+
+##########
+PARAMETERS
+    df : DataFrame with values to plot
+    col1: Column name of the values for the x-axis
+    col2: Column name of the values for the y-axis
+
+'''
+def gen_density_plot(df, col1, col2, cmap):
+    x = np.array(df.ix[:, col1])
+    y = np.array(df.ix[:, col2])
+    corr = np.round(pearsonr(x, y)[0],2)
+    xy = np.vstack([x,y])
+    z = gaussian_kde(xy)(xy)
+    idx = z.argsort()
+    x, y, z = x[idx], y[idx], z[idx]
+    fig, ax = plt.subplots()
+    den = ax.scatter(x, y, c=z, s=50, edgecolor='', cmap=cmap, rasterized=True)
+    cbar = fig.colorbar(den)
+    cbar.solids.set_edgecolor("face")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.xaxis.set_tick_params(bottom='on', top='off')
+    ax.yaxis.set_tick_params(left='on', right='off')
+    ax.set_xlabel(col1)
+    ax.set_ylabel(col2)
+    ax.text(np.min(ax.get_xlim())+1,np.max(ax.get_ylim())-0.5,'r = '+str(corr))
+    return
